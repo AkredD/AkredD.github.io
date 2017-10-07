@@ -13,14 +13,20 @@
         <label for="heapset">Set a heap (separating elements with commas)</label>
         <input id="heapset">
         <button id="drawheap">Draw a given heap</button>
-        <button id="addOne">Add one</button>
-        <button id="addAll">Add all</button>
+        <button id="addOne">Next step</button>
+        <button id="addAll">Start visualisation</button>
     </div>
     <div>
         <label> Animation speed:
-            <input id="speed" type="range" min="3" max="20" value="10">
+            <input id="speed" type="range" min="3" max="20" value="5">
         </label>
     </div>
+    <div>
+        <label for="vertexNum">Vertex number: </label><input id="vertexNum" value="31">
+        <button id="generate">Generate</button>
+    </div>
+    <canvas id="logical" width="1280" height="100">heap array</canvas>
+    
     <canvas id="myCanvas" width="1280" height="720"></canvas>
     <script>
       window.requestAnimFrame = (function(callback) {
@@ -159,6 +165,7 @@
       function animate() {
         var context = canvas.getContext('2d');
         step = document.getElementById("speed").value;
+        drawLogical();
         // update
         var date = new Date();
         var time = date.getTime();
@@ -181,8 +188,11 @@
            if (isSwapping){
                if (siftUp()){
                     ballA = (heap[positinOfSwapping]);
+                    ballA.color = yellow;
                     ballB = heap[parseInt((positinOfSwapping-1)/2)];
+                    ballB.color = yellow;
                     if (swapTo(ballA, ballB)){
+                       isMoving = false; 
                        ballA.color = blue;
                        ballB.color = blue; 
                        swap(positinOfSwapping, parseInt((positinOfSwapping-1)/2));
@@ -193,15 +203,24 @@
                    isSwapping = false; 
                    if (addingToHeap.length > 0){
                        addNext();
-                   }else isMoving = false;
+                   }else continueVisualisation = false;
                }
            }else if (moveTo(ballTo)){
-                   var local = balls[balls.length - 1];
-                   heap.push(new Ball(local.x, local.y, 0, 0, blue, local.number));
-                   balls.pop();
-                   isSwapping = true;
-                   positinOfSwapping = heap.length - 1;
+                   if (balls.length == 0){
+                        continueVisualisation = false;
+                        isMoving = false;
+                   } else{
+                       var local = balls[balls.length - 1];
+                       heap.push(new Ball(local.x, local.y, 0, 0, blue, local.number));
+                       balls.pop();
+                       isMoving = false;
+                       isSwapping = true;
+                       positinOfSwapping = heap.length - 1;
+                   }
            }
+        }
+        if (continueVisualisation){
+            isMoving = true;
         }
         // render
         var allBalls = balls.concat(heap);
@@ -247,12 +266,13 @@
         var balls = [];
         var isMoving = false;
         var isSwapping = false;
+        var continueVisualisation = false;
         var step = 10;
         var xTo, yTo, ballTo, ballA, ballB;
-        var toHeap = false;
         var radius = 30;
         var position;
         var positinOfSwapping;
+        var logical = document.getElementById("logical");
         var blue = '#3A5BCD';
         var red = '#EF2B36';
         var yellow = '#FFC636';
@@ -264,25 +284,58 @@
         
         document.getElementById("drawheap").addEventListener("click", function () {
             if (!isMoving){
-                position = 1;
                 var str = document.getElementById("heapset").value.split(",");
-                for (var i = 0; i < str.length; ++i){
-                    str[i] = parseInt(str[i]);
-                }
-                balls = [];
-                heap = [];
-                balls = initBalls(str);
-                canvas.width = balls.length*(2*radius + 10) + 100;
-                canvas.height = (Math.round(Math.log(balls.length)/Math.log(2) + 0.5) + 1) * (3*radius + 10);
-                //
+                returnBalls(str);
             }
         });
+        
+        document.getElementById("generate").addEventListener("click", function () {
+            var n = Math.abs(parseInt(document.getElementById("vertexNum").value));
+            var str = [];
+            if (isNaN(n) || n > 63 || n === 0) {
+                n = 31;
+            }
+            document.getElementById("vertexNum").value = n;
+            function nextInt() {
+                return Math.random() * 99 | 0
+            }
+            for (var i = 0; i < n; ++i){
+                str.push(nextInt());
+            }
+            returnBalls(str);
+        });
+        function returnBalls(str){
+            position = 1;
+            for (var i = 0; i < str.length; ++i){
+                str[i] = parseInt(str[i]);
+            }
+            balls = [];
+            heap = [];
+            balls = initBalls(str);
+            addingToHeap = addingToHeap.concat(balls);
+            canvas.width = balls.length*(2*radius + 10) + 100;
+            canvas.height = (Math.round(Math.log(balls.length)/Math.log(2) + 0.5) + 1) * (3*radius + 10);
+            addNext();
+        }
+        function drawLogical() {
+            var logicalCtx = logical.getContext('2d');
+            logicalCtx.clearRect(0, 0, logical.width, logical.height);
+            logicalCtx.font = "20px Georgia";
+            var valuesOfBalls = [];
+            var valuesOfHeap = [];
+            for (var i = 0; i < balls.length; ++i) valuesOfBalls.push(balls[i].number);
+            for (var i = 0; i < heap.length; ++i) valuesOfHeap.push(heap[i].number);
+            //clearCanvas(logicalCtx, logical);
+            logicalCtx.fillStyle = "black";
+            logicalCtx.fillText("For adding to heap: " + valuesOfBalls.join(', '), 0, 50);
+            logicalCtx.fillText("In heap: " + valuesOfHeap.join(', '), 0, 70);
+        }
+        
         
         document.getElementById("addOne").addEventListener("click", function () {
             if (!isMoving && balls.length > 0){          
                 isMoving = true;
-                addingToHeap.push(balls[balls.length - 1]);
-                addNext();
+                //addNext();
                 //console.log(balls);
                 //console.log(heap);
                 //animate(canvas, balls, time, heap);
@@ -291,8 +344,8 @@
         document.getElementById("addAll").addEventListener("click", function () {
             if (!isMoving && balls.length > 0){          
                 isMoving = true;
-                addingToHeap = addingToHeap.concat(balls);
-                addNext();
+                continueVisualisation = true;
+                
                 //console.log(ballTo);
                 console.log(balls);
                 console.log(heap);
