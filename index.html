@@ -322,6 +322,9 @@
         document.getElementById("finish").addEventListener("click", function () {
             heap = heap.concat(balls);
             position = 1;
+            isMoving = false;
+            isSwapping = false;
+            continueVisualisation = false;
             for (var i = 0; i < heap.length; ++i){
                 addNext();
                 heap[i] = new Ball(xTo, yTo, 0, 0, blue, heap[i].number);
