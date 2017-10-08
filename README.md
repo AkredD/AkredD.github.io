@@ -1,3 +1,3 @@
-# SpecialSeminar-v3.0-.github.io
+# Visualization of binary heap construction
 
-https://AkredD.github.io/
+### [Site](https://AkredD.github.io/)
