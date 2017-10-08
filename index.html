@@ -9,10 +9,28 @@
     </style>
   </head>
   <body>   
+    <div style="text-align: center;"><h1>Visualization of binary heap construction</h1></div>
+    <details>
+    <summary><b>About algorithm </b></summary>
+    <ol type="1">
+        <li>Add random array</li>
+        <li>Add element from array to end of heap</li>
+        <li>Balancing heap with SiftUp</li>
+        <li> Circles
+            <ul>
+                <li> Green - element pending uploads</li>
+                <li> Yellow - checking element</li>
+                <li> Red - unbalanced element in the heap</li>
+                <li> Blue - balanced element in the heap</li>
+            </ul>
+        </li>
+    </ol>
+</details>
     <div>
         <label for="heapset">Set a heap (separating elements with commas)</label>
         <input id="heapset">
         <button id="drawheap">Draw a given heap</button>
+        <button id="finish">Finish heap</button>
         <button id="addOne">Next step</button>
         <button id="addAll">Start visualisation</button>
     </div>
@@ -68,7 +86,7 @@
                ball.origY = yTo;
                return true;
            }
-           
+           ball.color = red;
            if (ball.x > xTo){
                ball.x = ball.x - ((ball.x - xTo) / (dist/step));
            }else{
@@ -114,8 +132,14 @@
       
       function siftUp(){
           if (heap[positinOfSwapping].number < heap[parseInt((positinOfSwapping-1)/2)].number){
+              heap[positinOfSwapping].color = red;
+              heap[parseInt((positinOfSwapping-1)/2)].color = yellow;
               return true;
-          }else return false;
+          }else{
+              heap[positinOfSwapping].color = blue;
+              heap[parseInt((positinOfSwapping-1)/2)].color = blue;
+              return false;
+            }
       }
       
       
@@ -188,19 +212,20 @@
            if (isSwapping){
                if (siftUp()){
                     ballA = (heap[positinOfSwapping]);
-                    ballA.color = yellow;
+                    //ballA.color = yellow;
                     ballB = heap[parseInt((positinOfSwapping-1)/2)];
-                    ballB.color = yellow;
+                    //ballB.color = yellow;
                     if (swapTo(ballA, ballB)){
                        isMoving = false; 
-                       ballA.color = blue;
+                       //ballA.color = blue;
                        ballB.color = blue; 
                        swap(positinOfSwapping, parseInt((positinOfSwapping-1)/2));
                        positinOfSwapping = parseInt((positinOfSwapping-1)/2);
+                       if (positinOfSwapping > 0) heap[parseInt((positinOfSwapping-1)/2)].color = yellow; 
                        //heap.pop();
                     }
-               }else{
-                   isSwapping = false; 
+               }else{   
+                   isSwapping = false;
                    if (addingToHeap.length > 0){
                        addNext();
                    }else continueVisualisation = false;
@@ -211,13 +236,19 @@
                         isMoving = false;
                    } else{
                        var local = balls[balls.length - 1];
-                       heap.push(new Ball(local.x, local.y, 0, 0, blue, local.number));
+                       heap.push(new Ball(local.x, local.y, 0, 0, red, local.number));
                        balls.pop();
                        isMoving = false;
                        isSwapping = true;
                        positinOfSwapping = heap.length - 1;
+                       if (positinOfSwapping > 0) heap[parseInt((positinOfSwapping-1)/2)].color = yellow; 
                    }
            }
+        }
+        if (heap.length > 0 && balls.length ==0 && siftUp() ){
+            for (var i = 0; i < heap.length; ++i){
+                heap[i].color = blue;
+            }
         }
         if (continueVisualisation){
             isMoving = true;
@@ -254,7 +285,6 @@
           xTo = coord.x;
           yTo = coord.y;
           ballTo = addingToHeap.pop();
-          ballTo.color = red;
       }
       
       
@@ -285,8 +315,27 @@
         document.getElementById("drawheap").addEventListener("click", function () {
             if (!isMoving){
                 var str = document.getElementById("heapset").value.split(",");
-                returnBalls(str);
+                if (str[0] != "") returnBalls(str);
             }
+        });
+        
+        document.getElementById("finish").addEventListener("click", function () {
+            heap = heap.concat(balls);
+            position = 1;
+            for (var i = 0; i < heap.length; ++i){
+                addNext();
+                heap[i] = new Ball(xTo, yTo, 0, 0, blue, heap[i].number);
+                positinOfSwapping = i;
+                ballA = heap[positinOfSwapping];
+                ballB = heap[parseInt((positinOfSwapping-1)/2)];
+                while (siftUp()){
+                       heap[positinOfSwapping].color = blue;
+                       heap[parseInt((positinOfSwapping-1)/2)].color = blue;
+                       swap(positinOfSwapping, parseInt((positinOfSwapping-1)/2));
+                       positinOfSwapping = parseInt((positinOfSwapping-1)/2);
+                } 
+            }
+            balls = [];
         });
         
         document.getElementById("generate").addEventListener("click", function () {
@@ -311,6 +360,8 @@
             }
             balls = [];
             heap = [];
+            isMoving = false;
+            isSwapping = false;
             balls = initBalls(str);
             addingToHeap = addingToHeap.concat(balls);
             canvas.width = balls.length*(2*radius + 10) + 100;
@@ -342,14 +393,20 @@
             }
         });
         document.getElementById("addAll").addEventListener("click", function () {
-            if (!isMoving && balls.length > 0){          
-                isMoving = true;
-                continueVisualisation = true;
-                
-                //console.log(ballTo);
-                console.log(balls);
-                console.log(heap);
-                //animate(canvas, balls, time, heap);
+            var startButton = document.getElementById("addAll");
+            if (startButton.firstChild.data == "Start visualisation"){
+                if (!isMoving && balls.length > 0){             
+                    isMoving = true;
+                    continueVisualisation = true;
+                    startButton.firstChild.data = "        Pause      ";
+                    //console.log(ballTo);
+                    console.log(balls);
+                    console.log(heap);
+                    //animate(canvas, balls, time, heap);
+                }
+            }else{
+                continueVisualisation = false;
+                startButton.firstChild.data = "Start visualisation";    
             }
         });
     </script>
